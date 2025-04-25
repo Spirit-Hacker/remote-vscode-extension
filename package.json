@@ -4,7 +4,7 @@
   "description": "listens to changes or commands from an LLM and updates changed files and runs those commands in the vs code terminal, so that user can see their that files are getting changed programaally",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.99.3"
+    "vscode": "^1.96.4"
   },
   "categories": [
     "Other"
@@ -30,7 +30,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@types/vscode": "^1.99.0",
+    "@types/vscode": "^1.96.4",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
     "@vscode/test-cli": "^0.0.10",

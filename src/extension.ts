@@ -2,6 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { WebSocket } from "ws";
+import * as fs from "fs";
+import * as path from "path";
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -31,6 +33,24 @@ export function activate(context: vscode.ExtensionContext) {
       }
       terminal.show();
       terminal.sendText("pwd\n");
+
+      // update file
+      let filePath = "useColorScheme.ts";
+      filePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath);
+      console.log("file path", filePath);
+
+      // create dir if they dont exists
+      const dirName = path.dirname(filePath);
+      if (!fs.existsSync(dirName)) {
+        fs.mkdirSync(dirName, { recursive: true });
+      }
+
+      fs.writeFileSync(filePath, "File updated by vscode extension", "utf-8");
+
+      const uri = vscode.Uri.file(filePath);
+      console.log("uri: ", uri);
+      vscode.window.showTextDocument(uri);
+
     } catch (err) {
       console.error("Error creating or using terminal:", err);
     }

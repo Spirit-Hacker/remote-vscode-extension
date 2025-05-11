@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     try {
       if (!terminal) {
-        terminal = vscode.window.createTerminal("My WebSocket Terminal");
+        terminal = vscode.window.createTerminal("AI Terminal");
       }
       terminal.show();
       terminal.sendText("pwd\n");
@@ -35,6 +35,12 @@ export function activate(context: vscode.ExtensionContext) {
       console.error("Error creating or using terminal:", err);
     }
   };
+
+  const terminalClosed = vscode.window.onDidCloseTerminal((closedTerminal) => {
+    if (closedTerminal === terminal) {
+      terminal = undefined;
+    }
+  });
 
   console.log(
     'Congratulations, your extension "site-genie-listener" is now active!'
@@ -54,6 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(disposable);
+  context.subscriptions.push(terminalClosed);
 }
 
 // This method is called when your extension is deactivated

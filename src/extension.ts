@@ -24,6 +24,9 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   ws.onmessage = (event) => {
+    vscode.window.showInformationMessage(
+      "Vs code extesion started successfully"
+    );
     // start a new terminal
     // check if terminal is already created
     const data = JSON.parse(event.data as string);

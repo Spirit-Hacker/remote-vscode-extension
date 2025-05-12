@@ -13,6 +13,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   let terminal: vscode.Terminal | undefined;
   const ws = new WebSocket("ws://host.docker.internal:8082");
+  // const ws = new WebSocket("ws://localhost:8082");
 
   ws.onerror = (err) => {
     console.error("WebSocket error:", err);
@@ -35,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
       terminal.sendText("pwd\n");
 
       // update file
-      let filePath = "useColorScheme.ts";
+      let filePath = "hooks/useColorScheme.ts";
       filePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath);
       console.log("file path", filePath);
 

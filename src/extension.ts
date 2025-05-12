@@ -12,8 +12,8 @@ export function activate(context: vscode.ExtensionContext) {
   // This line of code will only be executed once when your extension is activated
 
   let terminal: vscode.Terminal | undefined;
-  // const ws = new WebSocket("ws://host.docker.internal:8082");
-  const ws = new WebSocket("ws://localhost:8082");
+  const ws = new WebSocket("ws://host.docker.internal:8082");
+  // const ws = new WebSocket("ws://localhost:8082");
 
   ws.onerror = (err) => {
     console.error("WebSocket error:", err);

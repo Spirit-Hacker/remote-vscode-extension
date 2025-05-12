@@ -44,8 +44,8 @@ export function activate(context: vscode.ExtensionContext) {
       if (data.type === "file-update") {
         // update file
         let filePath = data.fullPath;
-        // filePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath);
-        // console.log("file path", filePath);
+        filePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath);
+        console.log("file path", filePath);
 
         // create dir if they dont exists
         const dirName = path.dirname(filePath);

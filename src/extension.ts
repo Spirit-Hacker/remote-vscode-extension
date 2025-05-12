@@ -12,8 +12,8 @@ export function activate(context: vscode.ExtensionContext) {
   // This line of code will only be executed once when your extension is activated
 
   let terminal: vscode.Terminal | undefined;
-  const ws = new WebSocket("ws://host.docker.internal:8082");
-  // const ws = new WebSocket("ws://localhost:8082");
+  // const ws = new WebSocket("ws://host.docker.internal:8082");
+  const ws = new WebSocket("ws://localhost:8082");
 
   ws.onerror = (err) => {
     console.error("WebSocket error:", err);
@@ -26,32 +26,36 @@ export function activate(context: vscode.ExtensionContext) {
   ws.onmessage = (event) => {
     // start a new terminal
     // check if terminal is already created
-    console.log("message", event);
+    const data = JSON.parse(event.data as string);
 
     try {
-      if (!terminal) {
-        terminal = vscode.window.createTerminal("AI Terminal");
+      if (data.type === "terminal-update") {
+        if (!terminal) {
+          terminal = vscode.window.createTerminal("AI Terminal");
+        }
+        terminal.show();
+        const command = data.shellCommand;
+        const updatedCommand = command.replaceAll("&&", ";");
+        terminal.sendText(updatedCommand + "\n");
       }
-      terminal.show();
-      terminal.sendText("pwd\n");
+      if (data.type === "file-update") {
+        // update file
+        let filePath = data.fullPath;
+        // filePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath);
+        // console.log("file path", filePath);
 
-      // update file
-      let filePath = "hooks/useColorScheme.ts";
-      filePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath);
-      console.log("file path", filePath);
+        // create dir if they dont exists
+        const dirName = path.dirname(filePath);
+        if (!fs.existsSync(dirName)) {
+          fs.mkdirSync(dirName, { recursive: true });
+        }
 
-      // create dir if they dont exists
-      const dirName = path.dirname(filePath);
-      if (!fs.existsSync(dirName)) {
-        fs.mkdirSync(dirName, { recursive: true });
+        fs.writeFileSync(filePath, data.fileContent, "utf-8");
+
+        const uri = vscode.Uri.file(filePath);
+        console.log("uri: ", uri);
+        vscode.window.showTextDocument(uri);
       }
-
-      fs.writeFileSync(filePath, "File updated by vscode extension", "utf-8");
-
-      const uri = vscode.Uri.file(filePath);
-      console.log("uri: ", uri);
-      vscode.window.showTextDocument(uri);
-
     } catch (err) {
       console.error("Error creating or using terminal:", err);
     }

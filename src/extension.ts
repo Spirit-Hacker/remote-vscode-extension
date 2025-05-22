@@ -5,6 +5,97 @@ import { WebSocket } from "ws";
 import * as fs from "fs";
 import * as path from "path";
 
+type FileUpdateType = {
+  type: string;
+  fileContent: string;
+  fullPath: string;
+};
+
+type RunCommandType = {
+  type: string;
+  shellCommand: string;
+};
+
+let currentUpdate = Promise.resolve();
+
+function enqueueGlobalUpdate(data: any) {
+  currentUpdate = currentUpdate
+    .then(() => updateFile(data))
+    .catch(console.error);
+}
+
+function runCommand(
+  data: RunCommandType,
+  terminal: vscode.Terminal | undefined
+) {
+  try {
+    // start a new terminal
+    // check if terminal is already created
+    if (!terminal) {
+      terminal = vscode.window.createTerminal("AI Terminal");
+    }
+    terminal.show();
+    const command = data.shellCommand;
+    const updatedCommand = command.replaceAll("&&", ";");
+    terminal.sendText(updatedCommand + "\n");
+  } catch (err: Error | any) {
+    console.error("Error using terminal: ", err);
+  }
+}
+
+async function updateFile(data: FileUpdateType) {
+  try {
+    // update file
+    let filePath = data.fullPath;
+    filePath = path.join(
+      vscode.workspace.workspaceFolders![0].uri.fsPath,
+      filePath
+    );
+    console.log("file path", filePath);
+
+    // create dir if they dont exists
+    const dirName = path.dirname(filePath);
+    if (!fs.existsSync(dirName)) {
+      fs.mkdirSync(dirName, { recursive: true });
+    }
+
+    // create file if they dont exists
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, "", "utf-8");
+    }
+
+    const uri = vscode.Uri.file(filePath);
+    console.log("uri: ", uri);
+    const document = await vscode.workspace.openTextDocument(uri);
+    const editor = await vscode.window.showTextDocument(document);
+
+    // clear the file first
+    await editor.edit((editBuilder) => {
+      const start = new vscode.Position(0, 0);
+      const end = new vscode.Position(document.lineCount, 0);
+
+      editBuilder.delete(new vscode.Range(start, end));
+    });
+
+    // slowly add lines one by one
+    const lines = data.fileContent.split("\n");
+
+    for (let i = 0; i < data.fileContent.length; ++i) {
+      const chunk = data.fileContent.slice(0, i);
+      await editor.edit((editBuilder) => {
+        editBuilder.replace(
+          new vscode.Range(0, 0, document.lineCount, 0),
+          chunk
+        );
+      });
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    await vscode.workspace.saveAll();
+  } catch (err: Error | any) {
+    console.error("Error creating file: ", err);
+  }
+}
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -23,44 +114,21 @@ export function activate(context: vscode.ExtensionContext) {
     console.log("WebSocket connection established!");
   };
 
-  ws.onmessage = (event) => {
+  ws.onmessage = async (event) => {
     vscode.window.showInformationMessage(
       "Vs code extesion started successfully"
     );
-    // start a new terminal
-    // check if terminal is already created
     const data = JSON.parse(event.data as string);
 
     try {
       if (data.type === "terminal-update") {
-        if (!terminal) {
-          terminal = vscode.window.createTerminal("AI Terminal");
-        }
-        terminal.show();
-        const command = data.shellCommand;
-        const updatedCommand = command.replaceAll("&&", ";");
-        terminal.sendText(updatedCommand + "\n");
+        runCommand(data, terminal);
       }
       if (data.type === "file-update") {
-        // update file
-        let filePath = data.fullPath;
-        filePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath);
-        console.log("file path", filePath);
-
-        // create dir if they dont exists
-        const dirName = path.dirname(filePath);
-        if (!fs.existsSync(dirName)) {
-          fs.mkdirSync(dirName, { recursive: true });
-        }
-
-        fs.writeFileSync(filePath, data.fileContent, "utf-8");
-
-        const uri = vscode.Uri.file(filePath);
-        console.log("uri: ", uri);
-        vscode.window.showTextDocument(uri);
+        enqueueGlobalUpdate(data);
       }
     } catch (err) {
-      console.error("Error creating or using terminal:", err);
+      console.error("Error creating file or using terminal:", err);
     }
   };
 
